@@ -12,7 +12,7 @@ fi
 
 cd /app
 DATABASE_URL="${DATABASE_URL:-postgresql://app:app_pw@localhost:5432/gateway}" \
-REDIS_URL="${REDIS_URL:-redis://localhost:6379/0}" \
+REDIS_URL="${REDIS_URL:-redis://app:app_redis_pw@localhost:6379/0}" \
 nohup uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 \
     > /app/uvicorn.log 2>&1 &
 echo $! > /app/uvicorn.pid

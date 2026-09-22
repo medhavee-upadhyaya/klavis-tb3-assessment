@@ -3,7 +3,7 @@ import os
 
 import redis.asyncio as redis
 
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+REDIS_URL = os.environ.get("REDIS_URL", "redis://app:app_redis_pw@localhost:6379/0")
 
 _client: redis.Redis | None = None
 

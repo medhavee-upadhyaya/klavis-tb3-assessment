@@ -3,4 +3,5 @@
 set -euo pipefail
 
 cp /solution/cache.py /app/cache.py
+cp /solution/config_store.py /app/config_store.py
 /app/restart.sh

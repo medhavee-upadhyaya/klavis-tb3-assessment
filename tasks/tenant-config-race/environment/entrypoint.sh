@@ -21,6 +21,12 @@ for i in $(seq 1 30); do
 done
 redis-cli ping >/dev/null 2>&1 || { echo "redis failed to start"; exit 1; }
 
+# The app authenticates as its own dedicated ACL user (not the default
+# user) so that admin tooling can disable/kill *only* the app's Redis
+# access (to simulate a real app-side outage) without touching Redis's
+# own default-user access.
+redis-cli ACL SETUSER app on '>app_redis_pw' '~*' allcommands
+
 /app/restart.sh
 
 echo "environment ready"
