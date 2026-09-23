@@ -38,16 +38,6 @@ async def fetch_config(tenant_id: str) -> asyncpg.Record | None:
     )
 
 
-async def fetch_generation(tenant_id: str) -> int | None:
-    """Cheap, single-column freshness check -- lets a caller confirm a
-    cached value isn't stale without paying for the full row (and its
-    JSONB fields) on every read."""
-    pool = await get_pool()
-    return await pool.fetchval(
-        "SELECT generation FROM tenant_configs WHERE tenant_id = $1", tenant_id
-    )
-
-
 async def apply_update(
     tenant_id: str,
     expected_generation: int,

@@ -42,11 +42,7 @@ async def read_cached(tenant_id: str) -> dict | None:
 
 
 async def write_cache(tenant_id: str, cfg: dict) -> None:
-    """Populate the read-through cache entry for a tenant.
-
-    Field-level HSET calls keep each write small instead of re-serializing
-    the whole hash for a single field change.
-    """
+    """Populate the read-through cache entry for a tenant."""
     client = get_client()
     key = cache_key(tenant_id)
     await client.hset(key, "generation", cfg["generation"])

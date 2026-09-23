@@ -25,7 +25,7 @@ redis-cli ping >/dev/null 2>&1 || { echo "redis failed to start"; exit 1; }
 # user) so that admin tooling can disable/kill *only* the app's Redis
 # access (to simulate a real app-side outage) without touching Redis's
 # own default-user access.
-redis-cli ACL SETUSER app on '>app_redis_pw' '~*' allcommands
+redis-cli ACL SETUSER app on '>app_redis_pw' '~*' allcommands -@admin
 
 /app/restart.sh
 
