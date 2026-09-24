@@ -3,11 +3,16 @@ import os
 
 import asyncpg
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL", "postgresql://app:app_pw@localhost:5432/gateway"
+# Writes go to the primary; config reads go to the streaming read replica.
+PRIMARY_DATABASE_URL = os.environ.get(
+    "PRIMARY_DATABASE_URL", "postgresql://app_writer:writer_pw@localhost:5432/gateway"
+)
+REPLICA_DATABASE_URL = os.environ.get(
+    "REPLICA_DATABASE_URL", "postgresql://app_reader:reader_pw@localhost:5433/gateway"
 )
 
-_pool: asyncpg.Pool | None = None
+_primary_pool: asyncpg.Pool | None = None
+_replica_pool: asyncpg.Pool | None = None
 
 
 async def _init_connection(conn: asyncpg.Connection) -> None:
@@ -16,17 +21,26 @@ async def _init_connection(conn: asyncpg.Connection) -> None:
     )
 
 
-async def get_pool() -> asyncpg.Pool:
-    global _pool
-    if _pool is None:
-        _pool = await asyncpg.create_pool(
-            DATABASE_URL, min_size=2, max_size=10, init=_init_connection
+async def get_primary_pool() -> asyncpg.Pool:
+    global _primary_pool
+    if _primary_pool is None:
+        _primary_pool = await asyncpg.create_pool(
+            PRIMARY_DATABASE_URL, min_size=2, max_size=10, init=_init_connection
         )
-    return _pool
+    return _primary_pool
+
+
+async def get_replica_pool() -> asyncpg.Pool:
+    global _replica_pool
+    if _replica_pool is None:
+        _replica_pool = await asyncpg.create_pool(
+            REPLICA_DATABASE_URL, min_size=2, max_size=10, init=_init_connection
+        )
+    return _replica_pool
 
 
 async def fetch_config(tenant_id: str) -> asyncpg.Record | None:
-    pool = await get_pool()
+    pool = await get_replica_pool()
     return await pool.fetchrow(
         """
         SELECT tenant_id, generation, model, prompt_version, tool_policy,
@@ -47,26 +61,14 @@ async def apply_update(
     fallback_chain: list,
     limits: dict,
 ) -> asyncpg.Record | None:
-    pool = await get_pool()
+    pool = await get_primary_pool()
     return await pool.fetchrow(
-        """
-        UPDATE tenant_configs
-        SET generation = generation + 1,
-            model = $2,
-            prompt_version = $3,
-            tool_policy = $4,
-            fallback_chain = $5,
-            limits = $6,
-            updated_at = now()
-        WHERE tenant_id = $1 AND generation = $7
-        RETURNING tenant_id, generation, model, prompt_version, tool_policy,
-                  fallback_chain, limits
-        """,
+        "SELECT * FROM apply_update($1, $2, $3, $4, $5, $6, $7)",
         tenant_id,
+        expected_generation,
         model,
         prompt_version,
         tool_policy,
         fallback_chain,
         limits,
-        expected_generation,
     )

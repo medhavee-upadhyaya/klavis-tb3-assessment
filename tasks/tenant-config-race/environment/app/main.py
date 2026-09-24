@@ -5,16 +5,10 @@ from fastapi.responses import PlainTextResponse
 
 import config_store
 from models import ConfigUpdate, RoutingConfig
-from seed import seed
 
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="config-gateway")
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    await seed()
 
 
 @app.get("/healthz", response_class=PlainTextResponse)

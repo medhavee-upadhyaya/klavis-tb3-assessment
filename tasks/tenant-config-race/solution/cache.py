@@ -71,9 +71,10 @@ async def write_cache(tenant_id: str, cfg: dict) -> None:
     block the caller: GET/POST have to keep succeeding via PostgreSQL
     regardless of Redis's state. Any staleness this leaves behind isn't
     this function's responsibility to fix -- config_store.get_routing_config
-    re-validates the cached generation against PostgreSQL on every read
-    while PostgreSQL is reachable, which is what makes monotonicity
-    absolute rather than dependent on this write ever being retried.
+    first brings the replica up to the primary's position and re-validates
+    the cached generation against it on every read while PostgreSQL is
+    reachable, which is what makes monotonicity absolute rather than
+    dependent on this write ever being retried.
     """
     client = get_client()
     key = cache_key(tenant_id)
